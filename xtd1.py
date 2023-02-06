@@ -117,6 +117,13 @@ class XTD1:
         # F    feed rate 
         #        F1000   1000mm/min = 16.7mm/sec
         #
+        # both of these work:
+        # M3 S30  set power for G1 moves
+        # G1 S30  set power for G1 moves
+        #
+        # G0 F3000 set feedrate for G0 moves (rapid, laser off)
+        # G1 F600  set feedrate for G1 moves (cut, laser on)
+        #
         # G92  vector from part 0,0 to tool tip
         #
         # G90  absolute programming
@@ -322,6 +329,25 @@ class XTD1:
 
             print(result)
             return
+
+        if test_arg == 'fileframe':
+            filename = a3
+            files = {'file': ('tmp.gcode', open(filename, 'rb'))}
+            url = '/cnc/data?filetype=1'
+            full_url = f'http://{self.IP}:{self.PORT}{url}'
+            result = requests.post(full_url, files=files)
+            print(result)
+            return
+
+        if test_arg == 'filecut':
+            filename = a3
+            files = {'file': ('tmp.gcode', open(filename, 'rb'))}
+            url = '/cnc/data?filetype=1'
+            full_url = f'http://{self.IP}:{self.PORT}{url}'
+            result = requests.post(full_url, files=files)
+            print(result)
+            return
+
 
         return
 
