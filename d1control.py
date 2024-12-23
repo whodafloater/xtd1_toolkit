@@ -13,34 +13,52 @@ import sys
 import traceback
 from xtd1 import XTD1
 
+ip = '192.168.0.106'
 
-machine = XTD1('192.168.0.104')
 actions = {
     '--status':       lambda: machine.get_status(),
     '--stop':         lambda: machine.stop(),
     '--gcode':        lambda: machine.execute_gcode_command(' '.join(sys.argv[2:])),
-    '--test':         lambda: machine.test(sys.argv[2], a3, a4, a5),
+    '--test':         lambda: machine.test(a[0], a[1], a[2], a[3]),
+    '--cutfile':      lambda: machine.cutfile_upload(filename),
+    '--framefile':    lambda: machine.framefile_upload(filename),
 }
 
-a3 = 0
-a4 = 0
-a4 = 0
-a5 = 0
-print(str(len(sys.argv)))
+a = []
+action_key = ''
+filename = ''
+   
+#print(f'num args = {len(sys.argv)}')
+while len(sys.argv) > 0:
+   arg = sys.argv.pop(0)
+#   print(arg)
+   if arg == '--ip':
+      ip = sys.argv.pop(0)
+      continue
 
-if len(sys.argv) > 3:
-    a3 = sys.argv[3]
+   # this consumes all the remaining args
+   if arg == '--test':
+      action_key = arg
+      while len(sys.argv) > 0:
+         a.append(sys.argv.pop(0))
 
-if len(sys.argv) > 4:
-    a4 = sys.argv[4]
+   if arg == '--cutfile' or arg == '--framefile':
+      action_key = arg
+      filename = sys.argv.pop(0)
+      continue
 
-if len(sys.argv) > 5:
-    a5 = sys.argv[5]
+# machine.test requires 4 args
+while len(a) < 4:
+   a.append(0)
+
+#print(f'action_key = {action_key}')
+#print(a)
 
 try:
-    action = actions[sys.argv[1]]
+    machine = XTD1(IP=ip)
+    action = actions[action_key]
 except KeyError:
-    print(f'Unknown option {sys.argv[1]}', file=sys.stderr)
+    print(f'Unknown option {action}', file=sys.stderr)
     for option in actions.keys(): print(option)
     sys.exit(1)
 except IndexError:
@@ -49,8 +67,9 @@ except IndexError:
     sys.exit(2)
 
 try:
+    # call the lambda fn and print the result
     print(action())
 except IndexError as ex:
-    print(f'\nOption {sys.argv[1]} needs an argument. Please look at the code.\n\n')
+    print(f'\nERROR: Option {action_key} {a[0]} needs argument(s). Please look at the code.\n\n')
     traceback.print_exception(type(ex), ex, ex.__traceback__)
     sys.exit(3)

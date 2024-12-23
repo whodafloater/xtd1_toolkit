@@ -30,6 +30,8 @@ import time
 import re
 import math
 
+from gcode import GcodeFramer
+
 class XTD1:
 
     def __init__(self, IP='201.234.3.1') -> None:
@@ -46,7 +48,7 @@ class XTD1:
 
     def execute_gcode_command(self, gcode):
         timestamp = int(time.time() * 1000)
-        gcode = gcode.replace(' ', '%20')
+        #gcode = gcode.replace(' ', '%20')
         print(gcode)
         return self._get_request(f'/cmd?cmd={gcode}&t={timestamp}')
 
@@ -90,13 +92,14 @@ class XTD1:
         # M97  S1  red cross off when no program is running
         #
         # red cross state when program is running.
-        # M106 S1  red cross on, laser stays off regardless of power setting
+        # M106 S1  red cross on
         # M106 S0  red cross off
         #
         # M9    pulse laser on
         # S     power, S30 -> 3%, S1000 -> 100%
-        # N     laser pulse duration in milliseconds
-        #       xcs uses 2^53-1 to turn on the laser "forever"
+        # N     laser pulse duration in milliseconds.
+        #       XCS uses 2^53-1 to turn on the laser "forever"
+        #       when using it for framing.
         #
         # M17   enable steppers
         # S     S0 max drive ?
@@ -107,7 +110,7 @@ class XTD1:
         #
         # M18   disable stepper drivers
         #
-        # M106
+        # M106 S0           led off
         # M205+X432+Y403    set machine limits ?
         # M101
         # 
@@ -202,9 +205,10 @@ class XTD1:
 
                 # limit to 10% for testing
                 if power > 100:
+                    print('INFO: power limited to 10% for test')
                     power = 100
 
-                s = ['/cmd?cmd=M9 S' + str(power) + 'N' + str(time),]
+                s = ['/cmd?cmd=M9 S' + str(power) + ' N' + str(time),]
             else:
                 s = ['/cmd?cmd=M9+S0+N0',]
 
@@ -330,15 +334,20 @@ class XTD1:
             print(result)
             return
 
+        # XTool D1 LED blink blue
+        # laser will still turn on if commanded to do so.
+        # Just excecute the gcode as is
         if test_arg == 'fileframe':
             filename = a3
             files = {'file': ('tmp.gcode', open(filename, 'rb'))}
-            url = '/cnc/data?filetype=1'
+            url = '/cnc/data?filetype=0'
             full_url = f'http://{self.IP}:{self.PORT}{url}'
             result = requests.post(full_url, files=files)
             print(result)
             return
 
+        # XTool D1 LED turns solid green
+        # press the button, execute the gcode
         if test_arg == 'filecut':
             filename = a3
             files = {'file': ('tmp.gcode', open(filename, 'rb'))}
@@ -351,24 +360,57 @@ class XTD1:
 
         return
 
-    def gcbox(self, xs, ys, cross, feed, power):
-       xsize = float(xs)
-       ysize = float(ys)
+    def framefile_upload(self, filename):
+        #files = {'file': ('tmp.gcode', open(filename, 'rb'))}
+        sizex, sizey, gc = self.frame_from_cutfile(filename)
+        files = {'file': ('tmp.gcode', gc)}
+        url = '/cnc/data?filetype=0'
+        full_url = f'http://{self.IP}:{self.PORT}{url}'
+        result = requests.post(full_url, files=files)
+        #print(result.status_code)
+        if result.status_code == 200:
+           print("INFO: upload success!")
+           print("INFO: Blue led should blinking. Press XTool button to frame.")
+           print("INFO: Before and after framing, Red cross indicates absolute 0,0")
+           print("INFO: During framing, laser head path is the real extent of the cutting path")
+        return result
 
-       # 5% max for testing
-       if power > 50:
-         power = 50
+    def cutfile_upload(self, filename):
+        files = {'file': ('tmp.gcode', open(filename, 'rb'))}
+        url = '/cnc/data?filetype=1'
+        full_url = f'http://{self.IP}:{self.PORT}{url}'
+        result = requests.post(full_url, files=files)
+        #print(result.status_code)
+        if result.status_code == 200:
+           print("INFO: upload success!")
+           print("INFO: Green led should be on. Press XTool button to cut.")
+        return result
 
-       x1 = 10
-       x2 = x1 + xsize
-       y1 = 10
-       y2 = y1 + ysize
+    def frame_from_cutfile(self, filename):
+        sizex = 0
+        sizey = 0
+        framer = GcodeFramer()
+        framer.calculate_frame_file(filename)
 
+        Xmin, Xmax = framer.Xminmax
+        Ymin, Ymax = framer.Yminmax
+
+        print(f"INFO: Frame size: {Xmax-Xmin:0.1f}mm X {Ymax-Ymin:0.1f}mm.")
+
+        gc = self.gcframebox(Xmin, Ymin, Xmax, Ymax, 1, 3000, 0)
+
+        return sizex, sizey, gc
+
+    def gcframebox(self, x1, y1, x2, y2, cross, feed, power):
        gc =  "M17 S1\n"
        gc += f"M106 S{cross}\n"
        gc += "M205 X426 Y403\n"
        gc += "M101\n"
-       gc += "G92 X0 Y0\n"
+
+       # laser offset from led cross
+       gc += "G92 X17 Y1\n"
+       #gc += "G92 X0 Y0\n"
+
        gc += "G90\n"
        gc += f"G1 F{feed}\n"
        gc += "G0 F3000\n"
@@ -380,7 +422,50 @@ class XTD1:
        gc += f"G1 X{x1} Y{y2}\n"
        gc += f"G1 X{x1} Y{y1}\n"
 
-       gc += "G0 X0 Y0\n"
+       #gc += "G0 X0 Y0\n"
+       # put led cross on 0,0
+       gc += "G0 X17 Y1\n"
+
+       gc += "M18\n"
+       return gc
+
+    def gcbox(self, xs, ys, cross, feed, power):
+       xsize = float(xs)
+       ysize = float(ys)
+
+       # 5% max for testing
+       if power > 50:
+         power = 50
+
+       x1 = 0
+       x2 = x1 + xsize
+       y1 = 0
+       y2 = y1 + ysize
+
+       gc =  "M17 S1\n"
+       gc += f"M106 S{cross}\n"
+       gc += "M205 X426 Y403\n"
+       gc += "M101\n"
+
+       # laser offset from led cross
+       gc += "G92 X17 Y1\n"
+       #gc += "G92 X0 Y0\n"
+
+       gc += "G90\n"
+       gc += f"G1 F{feed}\n"
+       gc += "G0 F3000\n"
+       gc += f"G1 S{power}\n"
+
+       gc += f"G0 X{x1} Y{y1}\n"
+       gc += f"G1 X{x2} Y{y1}\n"
+       gc += f"G1 X{x2} Y{y2}\n"
+       gc += f"G1 X{x1} Y{y2}\n"
+       gc += f"G1 X{x1} Y{y1}\n"
+
+       #gc += "G0 X0 Y0\n"
+       # put led cross on 0,0
+       gc += "G0 X17 Y1\n"
+
        gc += "M18\n"
        return gc
 
