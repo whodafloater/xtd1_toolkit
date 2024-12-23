@@ -361,8 +361,7 @@ class XTD1:
         return
 
     def framefile_upload(self, filename):
-        #files = {'file': ('tmp.gcode', open(filename, 'rb'))}
-        sizex, sizey, gc = self.frame_from_cutfile(filename)
+        gc = self.frame_from_cutfile(filename)
         files = {'file': ('tmp.gcode', gc)}
         url = '/cnc/data?filetype=0'
         full_url = f'http://{self.IP}:{self.PORT}{url}'
@@ -387,8 +386,6 @@ class XTD1:
         return result
 
     def frame_from_cutfile(self, filename):
-        sizex = 0
-        sizey = 0
         framer = GcodeFramer()
         framer.calculate_frame_file(filename)
 
@@ -398,8 +395,7 @@ class XTD1:
         print(f"INFO: Frame size: {Xmax-Xmin:0.1f}mm X {Ymax-Ymin:0.1f}mm.")
 
         gc = self.gcframebox(Xmin, Ymin, Xmax, Ymax, 1, 3000, 0)
-
-        return sizex, sizey, gc
+        return gc
 
     def gcframebox(self, x1, y1, x2, y2, cross, feed, power):
        gc =  "M17 S1\n"
