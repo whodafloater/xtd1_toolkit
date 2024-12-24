@@ -18,7 +18,7 @@ ip = '192.168.0.106'
 actions = {
     '--status':       lambda: machine.get_status(),
     '--stop':         lambda: machine.stop(),
-    '--gcode':        lambda: machine.execute_gcode_command(' '.join(sys.argv[2:])),
+    '--gcode':        lambda: machine.execute_gcode_command(codestr),
     '--test':         lambda: machine.test(a[0], a[1], a[2], a[3]),
     '--cutfile':      lambda: machine.cutfile_upload(filename),
     '--framefile':    lambda: machine.framefile_upload(filename),
@@ -41,11 +41,25 @@ while len(sys.argv) > 0:
       action_key = arg
       while len(sys.argv) > 0:
          a.append(sys.argv.pop(0))
+      continue
 
    if arg == '--cutfile' or arg == '--framefile':
       action_key = arg
       filename = sys.argv.pop(0)
       continue
+
+   # this consumes all the remaining args
+   if arg == '--gcode':
+      action_key = arg
+      codestr = ''
+      while len(sys.argv) > 0:
+         codestr = codestr + sys.argv.pop(0) + ' '
+      continue
+
+   if arg == '--status' or arg == '--stop':
+      action_key = arg
+      continue
+
 
 # machine.test requires 4 args
 while len(a) < 4:
