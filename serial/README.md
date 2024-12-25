@@ -8,8 +8,8 @@ Put on a cpp hat and do some Qt
 
 The Qt "Blocking Master Example" was tweaked get some useful interaction with the X-Tool D1.
 
-* [Qt Blocking Master Doc] [qtdoc]
-* [Qt example source code] [qtgit]
+* Qt Blocking Master Doc: [qtdoc]
+* Qt example source code: [qtgit]
 
 ## Adjustments to Suit X-Tool
 
@@ -43,9 +43,17 @@ And, run it:
 
         debug/blockingsender.exe
 
+Press start to get the sender thread going then just use the keyboard "Enter" to send text.
 
-Some sample debug output:
-    
+
+Send a blank line ("\n" added automatically) .. Xtool responds with "ok" ... and perhaps other stuff in its output buffer. 
+
+
+Some sample debug output showing responses to ?, $I, and $H. Yes, $H really does perform a homing operation to the upper left.
+
+Why the upper left? Why is the Y-axix inverted? Because SVG and the web and all sorts of places in the SW world, that's the way it is.
+
+
         sent:  "?\n"
                      recv:  "ok\n<MPos:0.000000,0.000000,0.000000,0.000000>\n"
         sent:  "\n"
