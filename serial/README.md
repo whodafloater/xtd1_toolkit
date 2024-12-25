@@ -8,8 +8,9 @@ Put on a cpp hat and do some Qt
 
 The Qt "Blocking Master Example" was tweaked get some useful interaction with the X-Tool D1.
 
-* Qt Blocking Master Doc: [qtdoc]
-* Qt example source code: [qtgit]
+
+* [Qt Blocking Master Doc] [qtdoc]
+* [Qt example source code] [qtgit]
 
 ## Adjustments to Suit X-Tool
 
@@ -73,5 +74,7 @@ Why the upper left? Why is the Y-axix inverted? Because SVG and the web and all 
 
 
 
-[qtdoc]: <https://doc.qt.io/qt-5/qtserialport-blockingmaster-example.html>
-[qtgit]: <https://github.com/qt/qtserialport/tree/dev/examples/serialport/blockingsender>
+
+[qtdoc]: https://doc.qt.io/qt-5/qtserialport-blockingmaster-example.html
+
+[qtgit]: https://github.com/qt/qtserialport/tree/dev/examples/serialport/blockingsender
