@@ -104,12 +104,12 @@ class GcodeFramer():
         Xmin, Xmax = self.Xminmax
         Ymin, Ymax = self.Yminmax
         return dedent(f'''
-        G0 X{Xmin:.7} Y{Ymin:.7}
+        G0 X{Xmin:.3f} Y{Ymin:.3f}
         G1 F9600 S5
-        G1 X{Xmax:.7} Y{Ymin:.7}
-        G1 X{Xmax:.7} Y{Ymax:.7}
-        G1 X{Xmin:.7} Y{Ymax:.7}
-        G1 X{Xmin:.7} Y{Ymin:.7}
+        G1 X{Xmax:.3f} Y{Ymin:.3f}
+        G1 X{Xmax:.3f} Y{Ymax:.3f}
+        G1 X{Xmin:.3f} Y{Ymax:.3f}
+        G1 X{Xmin:.3f} Y{Ymin:.3f}
         G0 X0 Y0
         ''').strip().encode('utf-8') + b'\n'    
 
