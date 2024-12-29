@@ -29,15 +29,18 @@ import json
 import time
 import re
 import math
+import sys
 
 from gcode import GcodeFramer
 
+
 class XTD1:
 
-    def __init__(self, IP='201.234.3.1') -> None:
+    def __init__(self, IP='192.168.0.106') -> None:
         self.IP = IP
         self.PORT = 8080
         self.CAMERA_PORT = 8329
+        self.quiet = False;
 
     def get_status(self):
         self.test('status', 0, 0, 0)
@@ -64,10 +67,10 @@ class XTD1:
     def _get_request(self, url, port=None, **kwargs) -> bytes:
         if port is None: port = self.PORT
         full_url = f'http://{self.IP}:{port}{url}'
-        print('url: ' + full_url)
+        if not self.quiet: print('url: ' + full_url)
         result = requests.get(full_url, timeout=10, **kwargs)
         if result.status_code != 200:
-            print('status: ' + str(result.status_code))
+            if not self.quiet: print('status: ' + str(result.status_code))
             #raise RuntimeError(f'Device returned HTTP status {result.status_code} for GET {full_url}')
         return result.content
 
@@ -76,6 +79,10 @@ class XTD1:
             print(x);
             reply = self._get_request(x).decode('utf-8')
             print(reply)
+
+    def blast_decode(self, s):
+        reply = self._get_request(s).decode('utf-8')
+        return json.JSONDecoder().decode(reply)
 
     def test(self, test_arg, a3, a4, a5):
 
@@ -274,7 +281,7 @@ class XTD1:
             self.blast({'/peripherystatus',});
             return
 
-        # kick the machine out of state 2, when tyoe=0 framing only.
+        # kick the machine out of state 2, when type=0 framing only.
         # deletes the tmp.gcode file ...
         # has no effect when processing a type=1 cut file
         if test_arg == 'abort':
@@ -362,9 +369,12 @@ class XTD1:
 
     def framefile_upload(self, filename):
         gc = self.frame_from_cutfile(filename)
+        print(f'generated gcode frame:\n{gc}')
         files = {'file': ('tmp.gcode', gc)}
         url = '/cnc/data?filetype=0'
         full_url = f'http://{self.IP}:{self.PORT}{url}'
+        print(full_url)
+        print(files)
         result = requests.post(full_url, files=files)
         #print(result.status_code)
         if result.status_code == 200:
@@ -465,7 +475,25 @@ class XTD1:
        gc += "M18\n"
        return gc
 
+    def monitor(self, n=100):
+       self.quiet = True
+       tstart = time.time()
+       while n>0:
+           state = self.blast_decode('/system?action=get_working_sta')
+           status = self.blast_decode('/peripherystatus')
+           print(f"elapsed:{time.time()-tstart:7.3f}  connect: {state['result']}  working_state: {state['working']}  status: {status['status']}")
+           time.sleep(0.100)
+           n = n - 1
+
 
 if __name__ == '__main__':
     d1 = XTD1()
-    print(d1.get_status())
+
+    if len(sys.argv) > 1:
+        if sys.argv[1] == 'monitor':
+            n=100
+            if len(sys.argv) > 2: n = int(sys.argv[2])
+            d1.monitor(n=n)
+
+    else:
+        print(d1.get_status())
