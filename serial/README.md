@@ -4,7 +4,31 @@ Yes, it does support some GRBL thru the  serial port.
 
 ![screenshot](media/serialsender1.png "XTool serial sender/reader")
 
-Put on a cpp hat and do some Qt
+# A python serial approach 
+
+setwifi.py is a an example the sets the wifi SSID and paswword via the serial port.
+It's more complicated than it needs to be for this simple task. It shows how to
+make a polling thread so you don't block the main thread waiting for replies.
+
+note that X-Tool D1 needs a newline terminator on the serial commands.
+If the SSID and PW are correct you get a response with the ip address.
+
+    setwifi.py
+
+    sending: M2001 "TP-LINK_9BE2" "your__pw"
+
+    Press Ctrl-C to stop polling. Waiting for IP address reply...
+    read result:b'ok\n'
+    read result:b'M2001 192.168.0.106\n'
+    wait for polling thread to finish
+    all done
+
+
+# A Qt example 
+
+I was messing around with Candle2, trying to get it to talk to the X-Tool.
+
+Let's put on a cpp hat and learn some Qt.
 
 The Qt "Blocking Master Example" was tweaked get some useful interaction with the X-Tool D1.
 
