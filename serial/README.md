@@ -24,6 +24,12 @@ If the SSID and PW are correct you get a response with the ip address.
     all done
 
 
+## python3-serial
+
+On the Orange Pi 5B, running Ubuntoo
+
+    sudo apt-get install python3-serial
+
 # A Qt example 
 
 I was messing around with Candle2, trying to get it to talk to the X-Tool.
